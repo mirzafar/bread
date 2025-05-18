@@ -128,8 +128,10 @@ class TelegramWebhookView(HTTPMethodView):
                 })
 
             if f_state := await cache.get(f'bread:{chat_id}:finish:state'):
+                print(f'->> {str(f_state)}')
                 if str(f_state) == 'address':
                     if text:
+                        print('--<<>>>')
                         await cache.set(f'bread:{chat_id}:finish:state', 'phone')
                         await cache.set(f'bread:{chat_id}:address', text)
                         message_id = message.get('message_id')
