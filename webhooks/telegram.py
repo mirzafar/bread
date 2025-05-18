@@ -1,9 +1,9 @@
-import httpx
 from sanic import response
 from sanic.views import HTTPMethodView
 
 from core import i18n
-from settings import settings
+from core.cache import cache
+from data.catalog import on_catalog
 
 # data = {
 #     'update_id': 929199204,
@@ -15,16 +15,13 @@ from settings import settings
 #                  'type': 'private'}, 'date': 1747564438, 'text': 'dawd'
 #     }
 # }
-CATALOG_TITLE = (f'1) Хлеб из зеленой гречки без мед\n'
-                 f'2) Хлеб из зеленой гречки с мед (кунжут или семечки можно в комментарии)\n'
-                 f'3) Хлеб из пророшенной пшеницы без мед\n'
-                 f'4) Хлеб Бионан из пророщенной пшеницы с мед (кунжут или семечки можно в комментарии)')
 
-CATALOG_IMAGES = [
-    '/static/images/pic1.jpg',
-    '/static/images/pic2.jpeg',
-    '/static/images/pic3.jpg',
-    '/static/images/pic4.jpeg'
+
+CATALOGS = [
+    {'id': 1, 'title': 'Хлеб из зеленой гречки без мед'},
+    {'id': 2, 'title': 'Хлеб из зеленой гречки с мед (кунжут или семечки можно в комментарии)'},
+    {'id': 3, 'title': '/Users/user/Desktop/bread/webhooks/telegram.py'},
+    {'id': 4, 'title': 'Хлеб Бионан из пророщенной пшеницы с мед (кунжут или семечки можно в комментарии)'},
 ]
 
 
@@ -76,34 +73,18 @@ class TelegramWebhookView(HTTPMethodView):
             })
 
         if text.startswith('\u2063'):
-            async with httpx.AsyncClient(timeout=30) as client:
-                await client.post(
-                    url=f'{settings["tg_api_url"]}/bot{settings["tg_token"]}/sendMediaGroup',
-                    json={
-                        'method': 'sendMediaGroup',
-                        'media': [
-                            {
-                                'type': 'photo',
-                                'media': settings['base_url'] + img
-                            } for img in CATALOG_IMAGES
-                        ],
-                        'chat_id': chat_id
-                    }
-                )
+            return response.json(await on_catalog(chat_id))
 
+        if text.startswith('\u2062'):
+            # await cache.delete('')
             return response.json({
                 'method': 'sendMessage',
-                'text': CATALOG_TITLE,
                 'chat_id': chat_id,
+                'text': 'Выберите продукт',
                 'reply_markup': {
-                    'keyboard': [
-                        ['\u2063📔Каталог'],
-                        ['\u2062📦Заказать'],
-                        ['\u2062🗃Мои заказы'],
-                    ],
-                    'resize_keyboard': True,
-                    'one_time_keyboard': True,
-                    'selective': True
+                    'inline_keyboard': [
+                        [{'text': c['title'], 'callback_data': f'check:{c}'}] for c in CATALOGS
+                    ]
                 }
             })
 
