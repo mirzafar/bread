@@ -129,12 +129,20 @@ class TelegramWebhookView(HTTPMethodView):
                 'method': 'editMessageText',
                 'message_id': data.get('callback_query', {}).get('message', {}).get('message_id') or None,
                 'chat_id': chat_id,
-                'text': 'Выберите',
+                'text': 'Выберите товар',
                 'reply_markup': {
                     'inline_keyboard': [
-                        [{'text': c['title'], 'callback_data': f'selectedGood:{c["id"]}'}] for c in CATALOGS
+                        [{'text': c['title'], 'callback_data': f'selectGood:{c["id"]}'}] for c in CATALOGS
                     ]
                 }
             })
+        elif callback_data and callback_data.startswith('selectGood'):
+            return response.json({
+                'method': 'editMessageText',
+                'message_id': data.get('callback_query', {}).get('message', {}).get('message_id') or None,
+                'chat_id': chat_id,
+                'text': 'Напишите количество'
+            })
+
 
         return response.json({})
