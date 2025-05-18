@@ -186,7 +186,8 @@ class TelegramWebhookView(HTTPMethodView):
                 basket.append({'title': good['title'], 'count': count})
 
                 inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}],
-                                   [{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}]]
+                                   [{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}],
+                                   [{'text': '💳Оформить заказ', 'callback_data': 'doneBasket'}]]
 
                 response_text = 'Товары в корзине:\n\n'
                 for g in basket:
