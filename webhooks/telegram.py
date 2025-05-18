@@ -91,7 +91,7 @@ class TelegramWebhookView(HTTPMethodView):
         elif message and message.get('caption'):
             text = message['caption']
 
-        if not text or not callback_data:
+        if not text and not callback_data:
             return response.json({
                 'method': 'sendMessage',
                 'chat_id': chat_id,
