@@ -97,7 +97,7 @@ class TelegramWebhookView(HTTPMethodView):
                 chat_id = data['callback_query']['message']['chat']['id']
 
             if message and message.get('text') == '/start':
-                await cache.delete(f'bread:selectGood:{chat_id}')
+                await cache.delete(f'bread:selectGood:{chat_id}', f'bread:{chat_id}:finish:state')
                 return response.json({
                     'method': 'sendMessage',
                     'chat_id': chat_id,
