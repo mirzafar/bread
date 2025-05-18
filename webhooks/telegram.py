@@ -136,6 +136,14 @@ class TelegramWebhookView(HTTPMethodView):
                         await cache.set(f'bread:{chat_id}:finish:state', 'phone')
                         await cache.set(f'bread:{chat_id}:address', text)
                         message_id = message.get('message_id')
+                        print()
+                        print()
+                        print({
+                            'method': message_id and 'editMessageText' or 'sendMessage',
+                            'chat_id': chat_id,
+                            'message_id': message_id,
+                            'text': 'Пожалуйста введите номер телефона',
+                        })
                         return response.json({
                             'method': message_id and 'editMessageText' or 'sendMessage',
                             'chat_id': chat_id,
