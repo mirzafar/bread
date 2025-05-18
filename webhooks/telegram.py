@@ -129,35 +129,19 @@ class TelegramWebhookView(HTTPMethodView):
 
             if f_state := await cache.get(f'bread:{chat_id}:finish:state'):
                 f_state = f_state.decode('utf-8')
-                print(f'--> {f_state}')
                 if f_state == 'address':
-                    print(f'-->2 {f_state}')
                     if text:
                         await cache.set(f'bread:{chat_id}:finish:state', 'phone')
                         await cache.set(f'bread:{chat_id}:address', text)
-                        message_id = message.get('message_id')
-                        print()
-                        print()
-                        print({
-                            'method': message_id and 'editMessageText' or 'sendMessage',
-                            'chat_id': chat_id,
-                            'message_id': message_id,
-                            'text': 'Пожалуйста введите номер телефона',
-                        })
                         return response.json({
-                            'method': message_id and 'editMessageText' or 'sendMessage',
+                            'method': 'sendMessage',
                             'chat_id': chat_id,
-                            'message_id': message_id,
                             'text': 'Пожалуйста введите номер телефона',
                         })
                     else:
-                        print(f'-->3 {f_state}')
-
-                        message_id = message.get('message_id')
                         return response.json({
-                            'method': message_id and 'editMessageText' or 'sendMessage',
+                            'method': 'sendMessage',
                             'chat_id': chat_id,
-                            'message_id': message_id,
                             'text': 'Пожалуйста введите правильный адрес',
                         })
 
@@ -177,19 +161,15 @@ class TelegramWebhookView(HTTPMethodView):
                             'address': address,
                             'phone': text
                         })
-                        message_id = message.get('message_id')
                         return response.json({
-                            'method': message_id and 'editMessageText' or 'sendMessage',
+                            'method': 'sendMessage',
                             'chat_id': chat_id,
-                            'message_id': message_id,
                             'text': 'Ваш заказ усепшно зарегистирован',
                         })
                     else:
-                        message_id = message.get('message_id')
                         return response.json({
-                            'method': message_id and 'editMessageText' or 'sendMessage',
+                            'method': 'sendMessage',
                             'chat_id': chat_id,
-                            'message_id': message_id,
                             'text': 'Пожалуйста введите правильный номер телефона',
                         })
 
