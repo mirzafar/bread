@@ -78,7 +78,7 @@ class TelegramWebhookView(HTTPMethodView):
                 'media': [
                     {
                         'type': 'photo',
-                        'media': settings['base_path'] + catalog['image'],
+                        'media': settings['base_url'] + catalog['image'],
                         'caption': catalog['title']
                     } for catalog in CATALOGS
                 ],
