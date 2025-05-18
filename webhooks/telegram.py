@@ -98,10 +98,10 @@ class TelegramWebhookView(HTTPMethodView):
                 'text': i18n.PLEASE_WRITE
             })
 
-        if text.startswith('\u2063'):
+        if text and text.startswith('\u2063'):
             return response.json(await on_catalog(chat_id))
 
-        if text.startswith('\u2062'):
+        if text and text.startswith('\u2062'):
             basket = await cache.get(f'chatbot:bread:{chat_id}:basket')
             if basket:
                 basket = ujson.loads(basket)
