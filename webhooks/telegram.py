@@ -1,3 +1,4 @@
+import ujson
 from sanic import response
 from sanic.views import HTTPMethodView
 
@@ -76,16 +77,24 @@ class TelegramWebhookView(HTTPMethodView):
             return response.json(await on_catalog(chat_id))
 
         if text.startswith('\u2062'):
-            # await cache.delete('')
+            basket = await cache.get(f'chatbot:bread:{chat_id}:basket')
+            if basket:
+                basket = ujson.loads(basket)
+
+            response_text = 'Выбрана'
+            inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}]]
+            if basket:
+                inline_keyboard.append([{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}])
+                response_text += '\n\n'
+                for g in basket['goods']:
+                    response_text += f'{g["title"]}: {g["count"]}\n'
+
             return response.json({
                 'method': 'sendMessage',
                 'chat_id': chat_id,
-                'text': 'Выберите продукт',
+                'text': response_text,
                 'reply_markup': {
-                    'inline_keyboard': [
-                        [{'text': c['title'], 'callback_data': f'check:{c["id"]}'}] for c in CATALOGS
-                    ],
-                    'keyboard': []
+                    'inline_keyboard': inline_keyboard
                 }
             })
 
