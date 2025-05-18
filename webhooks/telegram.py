@@ -1,3 +1,4 @@
+import httpx
 from sanic import response
 from sanic.views import HTTPMethodView
 
@@ -75,17 +76,24 @@ class TelegramWebhookView(HTTPMethodView):
             })
 
         if text.startswith('\u2063'):
-            return response.json([{
-                'method': 'sendMediaGroup',
-                'media': [
-                    {
-                        'type': 'photo',
-                        'media': settings['base_url'] + img,
-                        'caption': CATALOG_TITLE,
-                        'parse_mode': 'HTML'
-                    } for img in CATALOG_IMAGES
-                ],
-                'chat_id': chat_id,
+            async with httpx.AsyncClient(timeout=30) as client:
+                await client.post(
+                    url=f'{settings["tg_api_url"]}/bot{settings["tg_token"]}/sendMediaGroup',
+                    json={
+                        'method': 'sendMediaGroup',
+                        'media': [
+                            {
+                                'type': 'photo',
+                                'media': settings['base_url'] + img
+                            } for img in CATALOG_IMAGES
+                        ],
+                        'chat_id': chat_id
+                    }
+                )
+
+            return response.json({
+                'method': 'sendMessage',
+                'text': CATALOG_TITLE,
                 'reply_markup': {
                     'keyboard': [
                         ['\u2063📔Каталог'],
@@ -96,6 +104,6 @@ class TelegramWebhookView(HTTPMethodView):
                     'one_time_keyboard': True,
                     'selective': True
                 }
-            }])
+            })
 
         return response.json({})
