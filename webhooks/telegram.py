@@ -157,7 +157,7 @@ class TelegramWebhookView(HTTPMethodView):
                         )
                         await mongo.orders.insert_one({
                             'chat_id': chat_id,
-                            'items': basket and ujson.dumps(basket) or None,
+                            'items': basket and ujson.loads(basket) or None,
                             'address': address and address.decode('utf-8') or None,
                             'phone': text
                         })
