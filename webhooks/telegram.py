@@ -157,14 +157,24 @@ class TelegramWebhookView(HTTPMethodView):
                         )
                         await mongo.orders.insert_one({
                             'chat_id': chat_id,
-                            'items': basket,
-                            'address': address,
+                            'items': basket and ujson.dumps(basket) or None,
+                            'address': address and address.decode('utf-8') or None,
                             'phone': text
                         })
                         return response.json({
                             'method': 'sendMessage',
                             'chat_id': chat_id,
                             'text': 'Ваш заказ усепшно зарегистирован',
+                            'reply_markup': {
+                                'keyboard': [
+                                    ['\u2063📔Каталог'],
+                                    ['\u2062📦Заказать'],
+                                    ['\u2062🗃Мои заказы'],
+                                ],
+                                'resize_keyboard': True,
+                                'one_time_keyboard': True,
+                                'selective': True
+                            }
                         })
                     else:
                         return response.json({
