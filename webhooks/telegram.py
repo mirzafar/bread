@@ -20,7 +20,7 @@ from data.catalog import on_catalog
 CATALOGS = [
     {'id': 1, 'title': 'Хлеб из зеленой гречки без мед'},
     {'id': 2, 'title': 'Хлеб из зеленой гречки с мед (кунжут или семечки можно в комментарии)'},
-    {'id': 3, 'title': '/Users/user/Desktop/bread/webhooks/telegram.py'},
+    {'id': 3, 'title': 'Хлеб из пророшенной пшеницы без мед'},
     {'id': 4, 'title': 'Хлеб Бионан из пророщенной пшеницы с мед (кунжут или семечки можно в комментарии)'},
 ]
 
@@ -83,7 +83,7 @@ class TelegramWebhookView(HTTPMethodView):
                 'text': 'Выберите продукт',
                 'reply_markup': {
                     'inline_keyboard': [
-                        [{'text': c['title'], 'callback_data': f'check:{c}'}] for c in CATALOGS
+                        [{'text': c['title'], 'callback_data': f'check:{c["id"]}'}] for c in CATALOGS
                     ]
                 }
             })
