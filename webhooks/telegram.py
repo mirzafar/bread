@@ -2,7 +2,6 @@ from sanic import response
 from sanic.views import HTTPMethodView
 
 from core import i18n
-from settings import settings
 
 # data = {
 #     'update_id': 929199204,
@@ -73,18 +72,24 @@ class TelegramWebhookView(HTTPMethodView):
             })
 
         if text.startswith('\u2063'):
+            # return response.json({
+            #     'method': 'sendMediaGroup',
+            #     'media': [
+            #         {
+            #             'type': 'photo',
+            #             'media': settings['base_url'] + catalog['image'],
+            #             'caption': catalog['title'],
+            #             "parse_mode": "HTML"
+            #         } for catalog in CATALOGS
+            #     ],
+            #     'chat_id': chat_id,
+            #     "disable_notification": True
+            # })
             return response.json({
-                'method': 'sendMediaGroup',
-                'media': [
-                    {
-                        'type': 'photo',
-                        'media': settings['base_url'] + catalog['image'],
-                        'caption': catalog['title'],
-                        "parse_mode": "HTML"
-                    } for catalog in CATALOGS
-                ],
+                'method': 'sendMessage',
                 'chat_id': chat_id,
-                "disable_notification": True
+                'parse_mode': 'HTML',
+                'text': '<span>dnaiowndioaw</span><br/><br/><img src="https://mak-var.com.ua/wp-content/uploads/2016/06/1359713283_8.jpg">'
             })
 
         return response.json({})
