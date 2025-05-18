@@ -3,7 +3,6 @@ from sanic.views import HTTPMethodView
 
 from core import i18n
 
-
 # data = {
 #     'update_id': 929199204,
 #     'message': {
@@ -14,6 +13,15 @@ from core import i18n
 #                  'type': 'private'}, 'date': 1747564438, 'text': 'dawd'
 #     }
 # }
+
+CATALOGS = [
+    {'title': 'Хлеб из зеленой гречки без мед', 'image': 'static/images/pic1.jpg'},
+    {'title': 'Хлеб из зеленой гречки с мед (кунжут или семечки можно в комментарии)',
+     'image': 'static/images/pic2.jpeg'},
+    {'title': 'Хлеб из пророшенной пшеницы без мед', 'image': 'static/images/pic3.jpg'},
+    {'title': 'Хлеб Бионан из пророщенной пшеницы с мед (кунжут или семечки можно в комментарии)',
+     'image': 'static/images/pic4.jpeg'},
+]
 
 
 class TelegramWebhookView(HTTPMethodView):
@@ -55,5 +63,24 @@ class TelegramWebhookView(HTTPMethodView):
 
         elif message and message.get('caption'):
             text = message['caption']
+
+        if not text:
+            return response.json({
+                'method': 'sendMessage',
+                'chat_id': chat_id,
+                'text': i18n.PLEASE_WRITE
+            })
+
+        if text.startswith('\u2063'):
+            return response.json({
+                'method': 'sendMediaGroup',
+                'media': [
+                    {
+                        'type': 'photo',
+                        'media': 'https://mak-var.com.ua/wp-content/uploads/2016/06/1359713283_8.jpg',
+                        'caption': 'First photo caption'
+                    }
+                ]
+            })
 
         return response.json({})
