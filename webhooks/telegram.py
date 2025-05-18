@@ -128,7 +128,8 @@ class TelegramWebhookView(HTTPMethodView):
                 })
 
             if f_state := await cache.get(f'bread:{chat_id}:finish:state'):
-                if f_state == b'address':
+                f_state = f_state.decode('utf-8')
+                if f_state == 'address':
                     if text:
                         await cache.set(f'bread:{chat_id}:finish:state', 'phone')
                         await cache.set(f'bread:{chat_id}:address', text)
@@ -148,7 +149,7 @@ class TelegramWebhookView(HTTPMethodView):
                             'text': 'Пожалуйста введите правильный адрес',
                         })
 
-                elif f_state == b'phone':
+                elif f_state == 'phone':
                     if text and validate_phone(text):
                         basket = await cache.get(f'bread:{chat_id}:basket')
                         address = await cache.get(f'bread:{chat_id}:address')
