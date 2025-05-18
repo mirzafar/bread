@@ -17,6 +17,33 @@ from data.catalog import on_catalog
 #     }
 # }
 
+callback = {
+    'update_id': 238283914,
+    'callback_query': {
+        'id': '3015754537387908053',
+        'from': {
+            'id': 702160070, 'is_bot': False,
+            'first_name': 'Mirzafar', 'username': 'm1rzafar',
+            'language_code': 'en'},
+        'message': {'message_id': 94,
+                    'from': {
+                        'id': 7166723089,
+                        'is_bot': True,
+                        'first_name': 'ХлебоДоставка',
+                        'username': 'Bread_delivery_bot'},
+                    'chat': {
+                        'id': 702160070,
+                        'first_name': 'Mirzafar',
+                        'username': 'm1rzafar',
+                        'type': 'private'},
+                    'date': 1747586030,
+                    'text': 'Карзинка пусто. Для добавление товара нажмите кнопку "✅Bыбрать продукт"',
+                    'reply_markup': {
+                        'inline_keyboard': [
+                            [{
+                                'text': '✅Bыбрать продукт',
+                                'callback_data': 'chooseGoods'}]]}},
+        'chat_instance': '-8321419619944981968', 'data': 'chooseGoods'}}
 
 CATALOGS = [
     {'id': 1, 'title': 'Хлеб из зеленой гречки без мед'},
@@ -32,6 +59,7 @@ class TelegramWebhookView(HTTPMethodView):
         print(f'TelegramWebhookView.post: {data}')
 
         message = data.get('message')
+        callback_data = data.get('callback_query', {}).get('data')
 
         if message and message.get('chat', {}).get('type') == 'private':
             pass
@@ -67,6 +95,7 @@ class TelegramWebhookView(HTTPMethodView):
             text = message['caption']
 
         if not text:
+            print('TelegramWebhookView no text')
             return response.json({
                 'method': 'sendMessage',
                 'chat_id': chat_id,
