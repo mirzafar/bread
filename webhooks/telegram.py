@@ -126,7 +126,7 @@ class TelegramWebhookView(HTTPMethodView):
 
         if callback_data and callback_data == 'chooseGoods':
             return response.json({
-                'method': 'sendMessage',
+                'method': 'editMessageText',
                 'message_id': data.get('callback_query', {}).get('message', {}).get('message_id') or None,
                 'chat_id': chat_id,
                 'text': 'Выберите',
