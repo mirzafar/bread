@@ -106,6 +106,7 @@ class TelegramWebhookView(HTTPMethodView):
             })
 
         if good_id := await cache.get(f'bread:selectGood:{chat_id}'):
+            good = CATALOGS_BY_ID[int(good_id)]
             count = text and text.isdigit() and int(text)
             if count and count > 0:
                 basket = await cache.get(f'chatbot:bread:{chat_id}:basket')
@@ -114,7 +115,6 @@ class TelegramWebhookView(HTTPMethodView):
                 else:
                     basket = []
 
-                good = CATALOGS_BY_ID[int(good_id)]
                 basket.append({'title': good['title'], 'count': count})
 
                 inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}],
@@ -140,7 +140,7 @@ class TelegramWebhookView(HTTPMethodView):
                 return response.json({
                     'method': 'sendMessage',
                     'chat_id': chat_id,
-                    'text': 'Напишите количество'
+                    'text': f'Выбрали f{good["title"]}. Напишите количество'
                 })
 
         if text and text.startswith('\u2063'):
@@ -182,13 +182,14 @@ class TelegramWebhookView(HTTPMethodView):
                 }
             })
         elif callback_data and callback_data.startswith('selectGood'):
-            await cache.set(f'bread:selectGood:{chat_id}', callback_data.split(':')[1])
+            good = CATALOGS_BY_ID[int(callback_data.split(':')[1])]
+            await cache.set(f'bread:selectGood:{chat_id}', good['id'])
             message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
             return response.json({
                 'method': message_id and 'editMessageText' or 'sendMessage',
                 'message_id': message_id,
                 'chat_id': chat_id,
-                'text': 'Напишите количество'
+                'text': f'Выбрали f{good["title"]}. Напишите количество'
             })
 
         elif callback_data and callback_data.startswith('clearBasket'):
