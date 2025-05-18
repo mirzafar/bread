@@ -110,6 +110,8 @@ class TelegramWebhookView(HTTPMethodView):
                 basket = await cache.get(f'chatbot:bread:{chat_id}:basket')
                 if basket:
                     basket = ujson.loads(basket)
+                else:
+                    basket = []
 
                 good = CATALOGS_BY_ID[int(good_id)]
                 basket.append({'title': good['title'], 'count': int(text)})
