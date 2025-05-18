@@ -191,10 +191,11 @@ class TelegramWebhookView(HTTPMethodView):
 
         elif callback_data and callback_data.startswith('clearBasket'):
             await cache.delete(f'chatbot:bread:{chat_id}:basket', f'bread:selectGood:{chat_id}')
+            message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
             return response.json({
-                'method': 'editMessageText',
+                'method': message_id and 'editMessageText' or 'sendMessage',
                 'chat_id': chat_id,
-                'message_id': data.get('callback_query', {}).get('message', {}).get('message_id') or None,
+                'message_id': message_id,
                 'text': 'Карзинка пусто. Для добавление товара нажмите кнопку "✅Bыбрать продукт"',
                 'reply_markup': {
                     'inline_keyboard': [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}]]
