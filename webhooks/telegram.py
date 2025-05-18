@@ -17,7 +17,7 @@ from core import i18n
 
 
 class TelegramWebhookView(HTTPMethodView):
-    async def get(self, request):
+    async def post(self, request):
         data = request.json or {}
         print(f'TelegramWebhookView.post: {data}')
 
