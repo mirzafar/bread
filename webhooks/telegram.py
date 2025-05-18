@@ -285,7 +285,7 @@ class TelegramWebhookView(HTTPMethodView):
             })
 
         elif callback_data and callback_data.startswith('doneBasket'):
-            await cache.delete(f'bread:{chat_id}:basket')
+            await cache.delete(f'bread:selectGood:{chat_id}')
             await cache.set(f'bread:{chat_id}:finish:state', 'address')
             message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
             return response.json({
