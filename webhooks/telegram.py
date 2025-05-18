@@ -229,10 +229,10 @@ class TelegramWebhookView(HTTPMethodView):
             inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}]]
             if basket:
                 response_text = 'Товары в корзине:\n\n'
-                inline_keyboard.append(
+                inline_keyboard.extend([
                     [{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}],
                     [{'text': '💳Оформить заказ', 'callback_data': 'doneBasket'}],
-                )
+                ])
                 for g in basket:
                     response_text += f'{g["title"]}: {g["count"]}\n'
             else:
