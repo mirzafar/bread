@@ -128,6 +128,7 @@ class TelegramWebhookView(HTTPMethodView):
             if f_state == 'address':
                 if text:
                     await cache.set(f'bread:{chat_id}:finish:state', 'phone')
+                    await cache.set(f'bread:{chat_id}:address', text)
                     message_id = message.get('message_id')
                     return response.json({
                         'method': message_id and 'editMessageText' or 'sendMessage',
@@ -147,15 +148,19 @@ class TelegramWebhookView(HTTPMethodView):
             elif f_state == 'phone':
                 if text and validate_phone(text):
                     basket = await cache.get(f'bread:{chat_id}:basket')
+                    address = await cache.get(f'bread:{chat_id}:address')
                     await cache.delete(
                         f'bread:{chat_id}:finish:state',
                         f'bread:{chat_id}:basket',
                         f'bread:selectGood:{chat_id}',
-                        f'bread:{chat_id}:finish:state'
+                        f'bread:{chat_id}:finish:state',
+                        f'bread:{chat_id}:address'
                     )
                     await mongo.orders.insert_one({
                         'chat_id': chat_id,
-                        'items': basket
+                        'items': basket,
+                        'address': address,
+                        'phone': text
                     })
                     message_id = message.get('message_id')
                     return response.json({
