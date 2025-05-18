@@ -1,3 +1,5 @@
+import traceback
+
 import ujson
 from sanic import response
 from sanic.views import HTTPMethodView
@@ -80,126 +82,164 @@ CATALOGS_BY_ID = {
 
 class TelegramWebhookView(HTTPMethodView):
     async def post(self, request):
-        data = request.json or {}
-        print(f'TelegramWebhookView.post: {data}')
+        try:
+            data = request.json or {}
+            print(f'TelegramWebhookView.post: {data}')
 
-        message = data.get('message')
-        callback_data = data.get('callback_query', {}).get('data')
+            message = data.get('message')
+            callback_data = data.get('callback_query', {}).get('data')
 
-        text, chat_id = None, None
+            text, chat_id = None, None
 
-        if message:
-            chat_id = message.get('chat', {}).get('id')
-        elif data.get('callback_query', {}).get('message', {}).get('chat', {}).get('id'):
-            chat_id = data['callback_query']['message']['chat']['id']
+            if message:
+                chat_id = message.get('chat', {}).get('id')
+            elif data.get('callback_query', {}).get('message', {}).get('chat', {}).get('id'):
+                chat_id = data['callback_query']['message']['chat']['id']
 
-        if message and message.get('text') == '/start':
-            await cache.delete(f'bread:selectGood:{chat_id}')
-            return response.json({
-                'method': 'sendMessage',
-                'chat_id': chat_id,
-                'text': i18n.GREETING_BOT,
-                'reply_markup': {
-                    'keyboard': [
-                        ['\u2063📔Каталог'],
-                        ['\u2062📦Заказать'],
-                        ['\u2062🗃Мои заказы'],
-                    ],
-                    'resize_keyboard': True,
-                    'one_time_keyboard': True,
-                    'selective': True
-                }
-            })
+            if message and message.get('text') == '/start':
+                await cache.delete(f'bread:selectGood:{chat_id}')
+                return response.json({
+                    'method': 'sendMessage',
+                    'chat_id': chat_id,
+                    'text': i18n.GREETING_BOT,
+                    'reply_markup': {
+                        'keyboard': [
+                            ['\u2063📔Каталог'],
+                            ['\u2062📦Заказать'],
+                            ['\u2062🗃Мои заказы'],
+                        ],
+                        'resize_keyboard': True,
+                        'one_time_keyboard': True,
+                        'selective': True
+                    }
+                })
 
-        if message and message.get('text'):
-            text = message['text']
+            if message and message.get('text'):
+                text = message['text']
 
-        elif message and message.get('caption'):
-            text = message['caption']
+            elif message and message.get('caption'):
+                text = message['caption']
 
-        if not text and not callback_data:
-            return response.json({
-                'method': 'sendMessage',
-                'chat_id': chat_id,
-                'text': i18n.PLEASE_WRITE
-            })
+            if not text and not callback_data:
+                return response.json({
+                    'method': 'sendMessage',
+                    'chat_id': chat_id,
+                    'text': i18n.PLEASE_WRITE
+                })
 
-        if f_state := await cache.get(f'bread:{chat_id}:finish:state'):
-            if f_state == 'address':
-                if text:
-                    await cache.set(f'bread:{chat_id}:finish:state', 'phone')
-                    await cache.set(f'bread:{chat_id}:address', text)
-                    message_id = message.get('message_id')
-                    return response.json({
-                        'method': message_id and 'editMessageText' or 'sendMessage',
-                        'chat_id': chat_id,
-                        'message_id': message_id,
-                        'text': 'Пожалуйста введите номер телефона',
-                    })
-                else:
-                    message_id = message.get('message_id')
-                    return response.json({
-                        'method': message_id and 'editMessageText' or 'sendMessage',
-                        'chat_id': chat_id,
-                        'message_id': message_id,
-                        'text': 'Пожалуйста введите правильный адрес',
-                    })
+            if f_state := await cache.get(f'bread:{chat_id}:finish:state'):
+                if f_state == 'address':
+                    if text:
+                        await cache.set(f'bread:{chat_id}:finish:state', 'phone')
+                        await cache.set(f'bread:{chat_id}:address', text)
+                        message_id = message.get('message_id')
+                        return response.json({
+                            'method': message_id and 'editMessageText' or 'sendMessage',
+                            'chat_id': chat_id,
+                            'message_id': message_id,
+                            'text': 'Пожалуйста введите номер телефона',
+                        })
+                    else:
+                        message_id = message.get('message_id')
+                        return response.json({
+                            'method': message_id and 'editMessageText' or 'sendMessage',
+                            'chat_id': chat_id,
+                            'message_id': message_id,
+                            'text': 'Пожалуйста введите правильный адрес',
+                        })
 
-            elif f_state == 'phone':
-                if text and validate_phone(text):
+                elif f_state == 'phone':
+                    if text and validate_phone(text):
+                        basket = await cache.get(f'bread:{chat_id}:basket')
+                        address = await cache.get(f'bread:{chat_id}:address')
+                        await cache.delete(
+                            f'bread:{chat_id}:finish:state',
+                            f'bread:{chat_id}:basket',
+                            f'bread:selectGood:{chat_id}',
+                            f'bread:{chat_id}:finish:state',
+                            f'bread:{chat_id}:address'
+                        )
+                        await mongo.orders.insert_one({
+                            'chat_id': chat_id,
+                            'items': basket,
+                            'address': address,
+                            'phone': text
+                        })
+                        message_id = message.get('message_id')
+                        return response.json({
+                            'method': message_id and 'editMessageText' or 'sendMessage',
+                            'chat_id': chat_id,
+                            'message_id': message_id,
+                            'text': 'Ваш заказ усепшно зарегистирован',
+                        })
+                    else:
+                        message_id = message.get('message_id')
+                        return response.json({
+                            'method': message_id and 'editMessageText' or 'sendMessage',
+                            'chat_id': chat_id,
+                            'message_id': message_id,
+                            'text': 'Пожалуйста введите правильный номер телефона',
+                        })
+
+            if good_id := await cache.get(f'bread:selectGood:{chat_id}'):
+                good = CATALOGS_BY_ID[int(good_id)]
+                count = text and text.isdigit() and int(text)
+                if count and count > 0:
                     basket = await cache.get(f'bread:{chat_id}:basket')
-                    address = await cache.get(f'bread:{chat_id}:address')
-                    await cache.delete(
-                        f'bread:{chat_id}:finish:state',
-                        f'bread:{chat_id}:basket',
-                        f'bread:selectGood:{chat_id}',
-                        f'bread:{chat_id}:finish:state',
-                        f'bread:{chat_id}:address'
-                    )
-                    await mongo.orders.insert_one({
-                        'chat_id': chat_id,
-                        'items': basket,
-                        'address': address,
-                        'phone': text
-                    })
-                    message_id = message.get('message_id')
+                    if basket:
+                        basket = ujson.loads(basket)
+                    else:
+                        basket = []
+
+                    basket.append({'title': good['title'], 'count': count})
+
+                    inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}],
+                                       [{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}],
+                                       [{'text': '💳Оформить заказ', 'callback_data': 'doneBasket'}]]
+
+                    response_text = 'Товары в корзине:\n\n'
+                    for g in basket:
+                        response_text += f'{g["title"]}: {g["count"]}\n'
+
+                    await cache.delete(f'bread:selectGood:{chat_id}')
+                    await cache.set(f'bread:{chat_id}:basket', ujson.dumps(basket))
+
                     return response.json({
-                        'method': message_id and 'editMessageText' or 'sendMessage',
+                        'method': 'sendMessage',
                         'chat_id': chat_id,
-                        'message_id': message_id,
-                        'text': 'Ваш заказ усепшно зарегистирован',
-                    })
-                else:
-                    message_id = message.get('message_id')
-                    return response.json({
-                        'method': message_id and 'editMessageText' or 'sendMessage',
-                        'chat_id': chat_id,
-                        'message_id': message_id,
-                        'text': 'Пожалуйста введите правильный номер телефона',
+                        'text': response_text,
+                        'reply_markup': {
+                            'inline_keyboard': inline_keyboard
+                        }
                     })
 
-        if good_id := await cache.get(f'bread:selectGood:{chat_id}'):
-            good = CATALOGS_BY_ID[int(good_id)]
-            count = text and text.isdigit() and int(text)
-            if count and count > 0:
+                else:
+                    return response.json({
+                        'method': 'sendMessage',
+                        'chat_id': chat_id,
+                        'parse_mode': 'Markdown',
+                        'text': f'Выбрали *{good["title"]}*. Напишите количество'
+                    })
+
+            if text and text.startswith('\u2063'):
+                return response.json(await on_catalog(chat_id))
+
+            if text and text.startswith('\u2062'):
                 basket = await cache.get(f'bread:{chat_id}:basket')
                 if basket:
                     basket = ujson.loads(basket)
+
+                inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}]]
+                if basket:
+                    response_text = 'Товары в корзине:\n\n'
+                    inline_keyboard.extend([
+                        [{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}],
+                        [{'text': '💳Оформить заказ', 'callback_data': 'doneBasket'}],
+                    ])
+                    for g in basket:
+                        response_text += f'{g["title"]}: {g["count"]}\n'
                 else:
-                    basket = []
-
-                basket.append({'title': good['title'], 'count': count})
-
-                inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}],
-                                   [{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}],
-                                   [{'text': '💳Оформить заказ', 'callback_data': 'doneBasket'}]]
-
-                response_text = 'Товары в корзине:\n\n'
-                for g in basket:
-                    response_text += f'{g["title"]}: {g["count"]}\n'
-
-                await cache.delete(f'bread:selectGood:{chat_id}')
-                await cache.set(f'bread:{chat_id}:basket', ujson.dumps(basket))
+                    response_text = 'Карзинка пусто. Для добавление товара нажмите кнопку "✅Bыбрать продукт"'
 
                 return response.json({
                     'method': 'sendMessage',
@@ -210,89 +250,55 @@ class TelegramWebhookView(HTTPMethodView):
                     }
                 })
 
-            else:
+            if callback_data and callback_data == 'chooseGoods':
                 return response.json({
-                    'method': 'sendMessage',
+                    'method': 'editMessageText',
+                    'message_id': data.get('callback_query', {}).get('message', {}).get('message_id') or None,
+                    'chat_id': chat_id,
+                    'text': 'Выберите товар',
+                    'reply_markup': {
+                        'inline_keyboard': [
+                            [{'text': c['title'], 'callback_data': f'selectGood:{c["id"]}'}] for c in CATALOGS
+                        ]
+                    }
+                })
+
+            elif callback_data and callback_data.startswith('selectGood'):
+                good = CATALOGS_BY_ID[int(callback_data.split(':')[1])]
+                await cache.set(f'bread:selectGood:{chat_id}', good['id'])
+                message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
+                return response.json({
+                    'method': message_id and 'editMessageText' or 'sendMessage',
+                    'message_id': message_id,
                     'chat_id': chat_id,
                     'parse_mode': 'Markdown',
                     'text': f'Выбрали *{good["title"]}*. Напишите количество'
                 })
 
-        if text and text.startswith('\u2063'):
-            return response.json(await on_catalog(chat_id))
+            elif callback_data and callback_data.startswith('clearBasket'):
+                await cache.delete(f'bread:{chat_id}:basket', f'bread:selectGood:{chat_id}')
+                message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
+                return response.json({
+                    'method': message_id and 'editMessageText' or 'sendMessage',
+                    'chat_id': chat_id,
+                    'message_id': message_id,
+                    'text': 'Карзинка пусто. Для добавление товара нажмите кнопку "✅Bыбрать продукт"',
+                    'reply_markup': {
+                        'inline_keyboard': [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}]]
+                    }
+                })
 
-        if text and text.startswith('\u2062'):
-            basket = await cache.get(f'bread:{chat_id}:basket')
-            if basket:
-                basket = ujson.loads(basket)
-
-            inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}]]
-            if basket:
-                response_text = 'Товары в корзине:\n\n'
-                inline_keyboard.extend([
-                    [{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}],
-                    [{'text': '💳Оформить заказ', 'callback_data': 'doneBasket'}],
-                ])
-                for g in basket:
-                    response_text += f'{g["title"]}: {g["count"]}\n'
-            else:
-                response_text = 'Карзинка пусто. Для добавление товара нажмите кнопку "✅Bыбрать продукт"'
-
-            return response.json({
-                'method': 'sendMessage',
-                'chat_id': chat_id,
-                'text': response_text,
-                'reply_markup': {
-                    'inline_keyboard': inline_keyboard
-                }
-            })
-
-        if callback_data and callback_data == 'chooseGoods':
-            return response.json({
-                'method': 'editMessageText',
-                'message_id': data.get('callback_query', {}).get('message', {}).get('message_id') or None,
-                'chat_id': chat_id,
-                'text': 'Выберите товар',
-                'reply_markup': {
-                    'inline_keyboard': [
-                        [{'text': c['title'], 'callback_data': f'selectGood:{c["id"]}'}] for c in CATALOGS
-                    ]
-                }
-            })
-        elif callback_data and callback_data.startswith('selectGood'):
-            good = CATALOGS_BY_ID[int(callback_data.split(':')[1])]
-            await cache.set(f'bread:selectGood:{chat_id}', good['id'])
-            message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
-            return response.json({
-                'method': message_id and 'editMessageText' or 'sendMessage',
-                'message_id': message_id,
-                'chat_id': chat_id,
-                'parse_mode': 'Markdown',
-                'text': f'Выбрали *{good["title"]}*. Напишите количество'
-            })
-
-        elif callback_data and callback_data.startswith('clearBasket'):
-            await cache.delete(f'bread:{chat_id}:basket', f'bread:selectGood:{chat_id}')
-            message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
-            return response.json({
-                'method': message_id and 'editMessageText' or 'sendMessage',
-                'chat_id': chat_id,
-                'message_id': message_id,
-                'text': 'Карзинка пусто. Для добавление товара нажмите кнопку "✅Bыбрать продукт"',
-                'reply_markup': {
-                    'inline_keyboard': [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}]]
-                }
-            })
-
-        elif callback_data and callback_data.startswith('doneBasket'):
-            await cache.delete(f'bread:selectGood:{chat_id}')
-            await cache.set(f'bread:{chat_id}:finish:state', 'address')
-            message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
-            return response.json({
-                'method': message_id and 'editMessageText' or 'sendMessage',
-                'chat_id': chat_id,
-                'message_id': message_id,
-                'text': 'Пожалуйста введите адрес',
-            })
+            elif callback_data and callback_data.startswith('doneBasket'):
+                await cache.delete(f'bread:selectGood:{chat_id}')
+                await cache.set(f'bread:{chat_id}:finish:state', 'address')
+                message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
+                return response.json({
+                    'method': message_id and 'editMessageText' or 'sendMessage',
+                    'chat_id': chat_id,
+                    'message_id': message_id,
+                    'text': 'Пожалуйста введите адрес',
+                })
+        except (Exception,):
+            traceback.print_exc()
 
         return response.json({})
