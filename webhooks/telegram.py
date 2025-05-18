@@ -106,7 +106,8 @@ class TelegramWebhookView(HTTPMethodView):
             })
 
         if good_id := await cache.get(f'bread:selectGood:{chat_id}'):
-            if text and text.isdigit():
+            count = text and text.isdigit() and int(text)
+            if count and count > 0:
                 basket = await cache.get(f'chatbot:bread:{chat_id}:basket')
                 if basket:
                     basket = ujson.loads(basket)
@@ -114,7 +115,7 @@ class TelegramWebhookView(HTTPMethodView):
                     basket = []
 
                 good = CATALOGS_BY_ID[int(good_id)]
-                basket.append({'title': good['title'], 'count': int(text)})
+                basket.append({'title': good['title'], 'count': count})
 
                 inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}],
                                    [{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}]]
