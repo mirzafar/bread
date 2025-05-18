@@ -123,6 +123,8 @@ class TelegramWebhookView(HTTPMethodView):
                 for g in selected_goods:
                     response_text += f'{g["title"]}: {g["count"]}\n'
 
+                await cache.delete(f'bread:selectGood:{chat_id}')
+
                 return response.json({
                     'method': 'sendMessage',
                     'chat_id': chat_id,
