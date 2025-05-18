@@ -2,6 +2,7 @@ from sanic import response
 from sanic.views import HTTPMethodView
 
 from core import i18n
+from settings import settings
 
 # data = {
 #     'update_id': 929199204,
@@ -15,12 +16,12 @@ from core import i18n
 # }
 
 CATALOGS = [
-    {'title': 'Хлеб из зеленой гречки без мед', 'image': 'static/images/pic1.jpg'},
+    {'title': 'Хлеб из зеленой гречки без мед', 'image': '/static/images/pic1.jpg'},
     {'title': 'Хлеб из зеленой гречки с мед (кунжут или семечки можно в комментарии)',
-     'image': 'static/images/pic2.jpeg'},
-    {'title': 'Хлеб из пророшенной пшеницы без мед', 'image': 'static/images/pic3.jpg'},
+     'image': '/static/images/pic2.jpeg'},
+    {'title': 'Хлеб из пророшенной пшеницы без мед', 'image': '/static/images/pic3.jpg'},
     {'title': 'Хлеб Бионан из пророщенной пшеницы с мед (кунжут или семечки можно в комментарии)',
-     'image': 'static/images/pic4.jpeg'},
+     'image': '/static/images/pic4.jpeg'},
 ]
 
 
@@ -77,9 +78,9 @@ class TelegramWebhookView(HTTPMethodView):
                 'media': [
                     {
                         'type': 'photo',
-                        'media': 'https://mak-var.com.ua/wp-content/uploads/2016/06/1359713283_8.jpg',
-                        'caption': 'First photo caption'
-                    }
+                        'media': settings['base_dir'] + catalog['image'],
+                        'caption': catalog['title']
+                    } for catalog in CATALOGS
                 ],
                 'chat_id': chat_id
             })
