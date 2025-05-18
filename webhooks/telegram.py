@@ -4,7 +4,9 @@ from sanic.views import HTTPMethodView
 
 from core import i18n
 from core.cache import cache
+from core.db import mongo
 from data.catalog import on_catalog
+
 
 # data = {
 #     'update_id': 929199204,
@@ -44,6 +46,22 @@ from data.catalog import on_catalog
 #                                 'text': '✅Bыбрать продукт',
 #                                 'callback_data': 'chooseGoods'}]]}},
 #         'chat_instance': '-8321419619944981968', 'data': 'chooseGoods'}}
+
+def validate_phone(value: str):
+    if value.startswith('7') or value.startswith('8'):
+        if len(value) == 11:
+            return value
+        else:
+            return None
+
+    elif value.startswith('+'):
+        if len(value) == 12:
+            return value
+        else:
+            return None
+
+    return None
+
 
 CATALOGS = [
     {'id': 1, 'title': 'Хлеб из зеленой гречки без мед'},
@@ -106,11 +124,60 @@ class TelegramWebhookView(HTTPMethodView):
                 'text': i18n.PLEASE_WRITE
             })
 
+        if f_state := await cache.get(f'bread:{chat_id}:finish:state'):
+            if f_state == 'address':
+                if text:
+                    await cache.set(f'bread:{chat_id}:finish:state', 'phone')
+                    message_id = message.get('message_id')
+                    return response.json({
+                        'method': message_id and 'editMessageText' or 'sendMessage',
+                        'chat_id': chat_id,
+                        'message_id': message_id,
+                        'text': 'Пожалуйста введите номер телефона',
+                    })
+                else:
+                    message_id = message.get('message_id')
+                    return response.json({
+                        'method': message_id and 'editMessageText' or 'sendMessage',
+                        'chat_id': chat_id,
+                        'message_id': message_id,
+                        'text': 'Пожалуйста введите правильный адрес',
+                    })
+
+            elif f_state == 'phone':
+                if text and validate_phone(text):
+                    basket = await cache.get(f'bread:{chat_id}:basket')
+                    await cache.delete(
+                        f'bread:{chat_id}:finish:state',
+                        f'bread:{chat_id}:basket',
+                        f'bread:selectGood:{chat_id}',
+                        f'bread:{chat_id}:finish:state'
+                    )
+                    await mongo.orders.insert_one({
+                        'chat_id': chat_id,
+                        'items': basket
+                    })
+                    message_id = message.get('message_id')
+                    return response.json({
+                        'method': message_id and 'editMessageText' or 'sendMessage',
+                        'chat_id': chat_id,
+                        'message_id': message_id,
+                        'text': 'Ваш заказ усепшно зарегистирован',
+                    })
+                else:
+                    message_id = message.get('message_id')
+                    return response.json({
+                        'method': message_id and 'editMessageText' or 'sendMessage',
+                        'chat_id': chat_id,
+                        'message_id': message_id,
+                        'text': 'Пожалуйста введите правильный номер телефона',
+                    })
+
         if good_id := await cache.get(f'bread:selectGood:{chat_id}'):
             good = CATALOGS_BY_ID[int(good_id)]
             count = text and text.isdigit() and int(text)
             if count and count > 0:
-                basket = await cache.get(f'chatbot:bread:{chat_id}:basket')
+                basket = await cache.get(f'bread:{chat_id}:basket')
                 if basket:
                     basket = ujson.loads(basket)
                 else:
@@ -126,7 +193,7 @@ class TelegramWebhookView(HTTPMethodView):
                     response_text += f'{g["title"]}: {g["count"]}\n'
 
                 await cache.delete(f'bread:selectGood:{chat_id}')
-                await cache.set(f'chatbot:bread:{chat_id}:basket', ujson.dumps(basket))
+                await cache.set(f'bread:{chat_id}:basket', ujson.dumps(basket))
 
                 return response.json({
                     'method': 'sendMessage',
@@ -149,14 +216,17 @@ class TelegramWebhookView(HTTPMethodView):
             return response.json(await on_catalog(chat_id))
 
         if text and text.startswith('\u2062'):
-            basket = await cache.get(f'chatbot:bread:{chat_id}:basket')
+            basket = await cache.get(f'bread:{chat_id}:basket')
             if basket:
                 basket = ujson.loads(basket)
 
             inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}]]
             if basket:
                 response_text = 'Товары в корзине:\n\n'
-                inline_keyboard.append([{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}])
+                inline_keyboard.append(
+                    [{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}],
+                    [{'text': '💳Оформить заказ', 'callback_data': 'doneBasket'}],
+                )
                 for g in basket:
                     response_text += f'{g["title"]}: {g["count"]}\n'
             else:
@@ -196,7 +266,7 @@ class TelegramWebhookView(HTTPMethodView):
             })
 
         elif callback_data and callback_data.startswith('clearBasket'):
-            await cache.delete(f'chatbot:bread:{chat_id}:basket', f'bread:selectGood:{chat_id}')
+            await cache.delete(f'bread:{chat_id}:basket', f'bread:selectGood:{chat_id}')
             message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
             return response.json({
                 'method': message_id and 'editMessageText' or 'sendMessage',
@@ -206,6 +276,17 @@ class TelegramWebhookView(HTTPMethodView):
                 'reply_markup': {
                     'inline_keyboard': [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}]]
                 }
+            })
+
+        elif callback_data and callback_data.startswith('doneBasket'):
+            await cache.delete(f'bread:{chat_id}:basket')
+            await cache.set(f'bread:{chat_id}:finish:state', 'address')
+            message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
+            return response.json({
+                'method': message_id and 'editMessageText' or 'sendMessage',
+                'chat_id': chat_id,
+                'message_id': message_id,
+                'text': 'Пожалуйста введите адрес',
             })
 
         return response.json({})
