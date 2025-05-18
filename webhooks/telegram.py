@@ -80,7 +80,8 @@ class TelegramWebhookView(HTTPMethodView):
                         'media': 'https://mak-var.com.ua/wp-content/uploads/2016/06/1359713283_8.jpg',
                         'caption': 'First photo caption'
                     }
-                ]
+                ],
+                'chat_id': chat_id
             })
 
         return response.json({})
