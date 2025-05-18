@@ -79,10 +79,12 @@ class TelegramWebhookView(HTTPMethodView):
                     {
                         'type': 'photo',
                         'media': settings['base_url'] + catalog['image'],
-                        'caption': catalog['title']
+                        'caption': catalog['title'],
+                        "parse_mode": "HTML"
                     } for catalog in CATALOGS
                 ],
-                'chat_id': chat_id
+                'chat_id': chat_id,
+                "disable_notification": True
             })
 
         return response.json({})
