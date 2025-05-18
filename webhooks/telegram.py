@@ -124,11 +124,10 @@ class TelegramWebhookView(HTTPMethodView):
                 }
             })
 
-        print('---<', callback_data)
         if callback_data and callback_data == 'chooseGoods':
-            print('--->>')
             return response.json({
                 'method': 'sendMessage',
+                'message_id': data.get('callback_query', {}).get('message', {}).get('message_id') or None,
                 'chat_id': chat_id,
                 'text': 'Выберите',
                 'reply_markup': {
