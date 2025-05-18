@@ -81,13 +81,14 @@ class TelegramWebhookView(HTTPMethodView):
             if basket:
                 basket = ujson.loads(basket)
 
-            response_text = 'Выбрана'
             inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}]]
             if basket:
+                response_text = 'Товары в корзине:\n\n'
                 inline_keyboard.append([{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}])
-                response_text += '\n\n'
                 for g in basket['goods']:
                     response_text += f'{g["title"]}: {g["count"]}\n'
+            else:
+                response_text = 'У товары в корзине нету. Для добавление нажмите кнопку "✅Bыбрать продукт"'
 
             return response.json({
                 'method': 'sendMessage',
