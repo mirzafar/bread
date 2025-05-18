@@ -122,6 +122,7 @@ class TelegramWebhookView(HTTPMethodView):
                 }
             })
 
+        print('---<', callback_data)
         if callback_data and callback_data == 'chooseGoods':
             print('--->>')
             return response.json({
