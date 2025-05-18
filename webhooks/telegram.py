@@ -76,20 +76,20 @@ class TelegramWebhookView(HTTPMethodView):
             })
 
         if text.startswith('\u2063'):
-            async with httpx.AsyncClient(timeout=30) as client:
-                await client.post(
-                    url=f'{settings["tg_api_url"]}/bot{settings["tg_token"]}/sendMediaGroup',
-                    json={
-                        'method': 'sendMediaGroup',
-                        'media': [
-                            {
-                                'type': 'photo',
-                                'media': settings['base_url'] + img
-                            } for img in CATALOG_IMAGES
-                        ],
-                        'chat_id': chat_id
-                    }
-                )
+            # async with httpx.AsyncClient(timeout=30) as client:
+            #     await client.post(
+            #         url=f'{settings["tg_api_url"]}/bot{settings["tg_token"]}/sendMediaGroup',
+            #         json={
+            #             'method': 'sendMediaGroup',
+            #             'media': [
+            #                 {
+            #                     'type': 'photo',
+            #                     'media': settings['base_url'] + img
+            #                 } for img in CATALOG_IMAGES
+            #             ],
+            #             'chat_id': chat_id
+            #         }
+            #     )
 
             return response.json({
                 'method': 'sendMessage',
