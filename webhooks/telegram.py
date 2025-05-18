@@ -192,7 +192,7 @@ class TelegramWebhookView(HTTPMethodView):
                 'message_id': message_id,
                 'chat_id': chat_id,
                 'parse_mode': 'Markdown',
-                'text': f'Выбрали *f{good["title"]}*. Напишите количество'
+                'text': f'Выбрали *{good["title"]}*. Напишите количество'
             })
 
         elif callback_data and callback_data.startswith('clearBasket'):
