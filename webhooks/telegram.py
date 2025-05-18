@@ -140,7 +140,8 @@ class TelegramWebhookView(HTTPMethodView):
                 return response.json({
                     'method': 'sendMessage',
                     'chat_id': chat_id,
-                    'text': f'Выбрали f{good["title"]}. Напишите количество'
+                    'parse_mode': 'Markdown',
+                    'text': f'Выбрали *{good["title"]}*. Напишите количество'
                 })
 
         if text and text.startswith('\u2063'):
@@ -189,7 +190,8 @@ class TelegramWebhookView(HTTPMethodView):
                 'method': message_id and 'editMessageText' or 'sendMessage',
                 'message_id': message_id,
                 'chat_id': chat_id,
-                'text': f'Выбрали f{good["title"]}. Напишите количество'
+                'parse_mode': 'Markdown',
+                'text': f'Выбрали *f{good["title"]}*. Напишите количество'
             })
 
         elif callback_data and callback_data.startswith('clearBasket'):
