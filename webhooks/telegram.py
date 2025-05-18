@@ -2,6 +2,7 @@ from sanic import response
 from sanic.views import HTTPMethodView
 
 from core import i18n
+from settings import settings
 
 # data = {
 #     'update_id': 929199204,
@@ -13,14 +14,16 @@ from core import i18n
 #                  'type': 'private'}, 'date': 1747564438, 'text': 'dawd'
 #     }
 # }
+CATALOG_TITLE = (f'Хлеб из зеленой гречки без мед\n'
+                 f'Хлеб из зеленой гречки с мед (кунжут или семечки можно в комментарии)\n'
+                 f'Хлеб из пророшенной пшеницы без мед\n'
+                 f'Хлеб Бионан из пророщенной пшеницы с мед (кунжут или семечки можно в комментарии)')
 
-CATALOGS = [
-    {'title': 'Хлеб из зеленой гречки без мед', 'image': '/static/images/pic1.jpg'},
-    {'title': 'Хлеб из зеленой гречки с мед (кунжут или семечки можно в комментарии)',
-     'image': '/static/images/pic2.jpeg'},
-    {'title': 'Хлеб из пророшенной пшеницы без мед', 'image': '/static/images/pic3.jpg'},
-    {'title': 'Хлеб Бионан из пророщенной пшеницы с мед (кунжут или семечки можно в комментарии)',
-     'image': '/static/images/pic4.jpeg'},
+CATALOG_IMAGES = [
+    '/static/images/pic1.jpg',
+    '/static/images/pic2.jpeg',
+    '/static/images/pic3.jpg',
+    '/static/images/pic4.jpeg'
 ]
 
 
@@ -72,24 +75,18 @@ class TelegramWebhookView(HTTPMethodView):
             })
 
         if text.startswith('\u2063'):
-            # return response.json({
-            #     'method': 'sendMediaGroup',
-            #     'media': [
-            #         {
-            #             'type': 'photo',
-            #             'media': settings['base_url'] + catalog['image'],
-            #             'caption': catalog['title'],
-            #             "parse_mode": "HTML"
-            #         } for catalog in CATALOGS
-            #     ],
-            #     'chat_id': chat_id,
-            #     "disable_notification": True
-            # })
             return response.json({
-                'method': 'sendMessage',
+                'method': 'sendMediaGroup',
+                'media': [
+                    {
+                        'type': 'photo',
+                        'media': settings['base_url'] + img,
+                        'caption': CATALOG_TITLE,
+                        'parse_mode': 'HTML'
+                    } for img in CATALOG_IMAGES
+                ],
                 'chat_id': chat_id,
-                'parse_mode': 'HTML',
-                'text': '<span>dnaiowndioaw</span><br/><br/><img src="https://mak-var.com.ua/wp-content/uploads/2016/06/1359713283_8.jpg">'
+                "disable_notification": True
             })
 
         return response.json({})
