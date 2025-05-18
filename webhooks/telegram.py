@@ -75,7 +75,7 @@ class TelegramWebhookView(HTTPMethodView):
             })
 
         if text.startswith('\u2063'):
-            return response.json({
+            return response.json([{
                 'method': 'sendMediaGroup',
                 'media': [
                     {
@@ -96,6 +96,6 @@ class TelegramWebhookView(HTTPMethodView):
                     'one_time_keyboard': True,
                     'selective': True
                 }
-            })
+            }])
 
         return response.json({})
