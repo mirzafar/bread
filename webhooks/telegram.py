@@ -108,22 +108,21 @@ class TelegramWebhookView(HTTPMethodView):
         if good_id := await cache.get(f'bread:selectGood:{chat_id}'):
             if text and text.isdigit():
                 basket = await cache.get(f'chatbot:bread:{chat_id}:basket')
-                selected_goods = []
                 if basket:
                     basket = ujson.loads(basket)
-                    selected_goods = basket['goods']
 
                 good = CATALOGS_BY_ID[int(good_id)]
-                selected_goods.append({'title': good['title'], 'count': int(text)})
+                basket.append({'title': good['title'], 'count': int(text)})
 
                 inline_keyboard = [[{'text': '✅Bыбрать продукт', 'callback_data': 'chooseGoods'}],
                                    [{'text': '🗑Очистить карзинку', 'callback_data': 'clearBasket'}]]
 
                 response_text = 'Товары в корзине:\n\n'
-                for g in selected_goods:
+                for g in basket:
                     response_text += f'{g["title"]}: {g["count"]}\n'
 
                 await cache.delete(f'bread:selectGood:{chat_id}')
+                await cache.set(f'chatbot:bread:{chat_id}:basket', ujson.dumps(basket))
 
                 return response.json({
                     'method': 'sendMessage',
