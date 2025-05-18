@@ -84,7 +84,8 @@ class TelegramWebhookView(HTTPMethodView):
                 'reply_markup': {
                     'inline_keyboard': [
                         [{'text': c['title'], 'callback_data': f'check:{c["id"]}'}] for c in CATALOGS
-                    ]
+                    ],
+                    'keyboard': []
                 }
             })
 
