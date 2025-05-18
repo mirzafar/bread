@@ -61,11 +61,6 @@ class TelegramWebhookView(HTTPMethodView):
         message = data.get('message')
         callback_data = data.get('callback_query', {}).get('data')
 
-        if message and message.get('chat', {}).get('type') == 'private':
-            pass
-        else:
-            return response.json({})
-
         text, chat_id = None, None
 
         if message:
