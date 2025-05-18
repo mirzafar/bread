@@ -183,8 +183,10 @@ class TelegramWebhookView(HTTPMethodView):
             })
         elif callback_data and callback_data.startswith('selectGood'):
             await cache.set(f'bread:selectGood:{chat_id}', callback_data.split(':')[1])
+            message_id = data.get('callback_query', {}).get('message', {}).get('message_id')
             return response.json({
-                'method': 'sendMessage',
+                'method': message_id and 'editMessageText' or 'sendMessage',
+                'message_id': message_id,
                 'chat_id': chat_id,
                 'text': 'Напишите количество'
             })
