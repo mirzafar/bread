@@ -65,6 +65,8 @@ class TelegramWebhookView(HTTPMethodView):
 
         if message:
             chat_id = message.get('chat', {}).get('id')
+        elif data.get('callback_query', {}).get('message', {}).get('chat', {}).get('id'):
+            chat_id = data['callback_query']['message']['chat']['id']
 
         if message and message.get('text') == '/start':
             return response.json({
