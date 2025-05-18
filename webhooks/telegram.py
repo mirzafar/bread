@@ -88,7 +88,7 @@ class TelegramWebhookView(HTTPMethodView):
                 for g in basket['goods']:
                     response_text += f'{g["title"]}: {g["count"]}\n'
             else:
-                response_text = 'У товары в корзине нету. Для добавление нажмите кнопку "✅Bыбрать продукт"'
+                response_text = 'Карзинка пусто. Для добавление товара нажмите кнопку "✅Bыбрать продукт"'
 
             return response.json({
                 'method': 'sendMessage',
