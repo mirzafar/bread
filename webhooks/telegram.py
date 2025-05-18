@@ -86,7 +86,16 @@ class TelegramWebhookView(HTTPMethodView):
                     } for img in CATALOG_IMAGES
                 ],
                 'chat_id': chat_id,
-                "disable_notification": True
+                'reply_markup': {
+                    'keyboard': [
+                        ['\u2063📔Каталог'],
+                        ['\u2062📦Заказать'],
+                        ['\u2062🗃Мои заказы'],
+                    ],
+                    'resize_keyboard': True,
+                    'one_time_keyboard': True,
+                    'selective': True
+                }
             })
 
         return response.json({})
